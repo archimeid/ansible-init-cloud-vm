@@ -1,0 +1,1 @@
+# ansible-init-cloud-vm
