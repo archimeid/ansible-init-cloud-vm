@@ -3,10 +3,6 @@
   gather_facts: false
   vars_prompt:
 
-    - name: ssh_user
-      prompt: Enter SSH user 
-      private: no
-
     - name: new_ssh_password
       prompt: Enter the new SSH password
 
@@ -29,21 +25,23 @@
       name: "Change password on initial login"
       delegate_to: localhost
       ansible.builtin.expect:
-        command: ssh {{ ansible_ssh_common_args }} {{ ssh_user }}@{{ inventory_hostname }}
+        command: ssh {{ ansible_ssh_common_args }} {{ remote_user }}@{{ inventory_hostname }}
         timeout: 20
         responses:
           Password: '{{ old_password }}'
           Current password: '{{ old_password }}'
           New password: '{{ new_ssh_password }}'
           Retype new password: '{{ new_ssh_password }}'
-          "\\~\\]\\$": exit
+          "\\$": 'exit'
 
     - ansible.builtin.set_fact:
         ansible_password: '{{ new_ssh_password }}'
     
+    
+
     - name: Push public key to remote host
       ansible.posix.authorized_key:
-        user: '{{ ssh_user }}'
+        user: '{{ remote_user }}'
         state: present
         key: "{{ lookup('file', public_key_path) }}"
 
