@@ -11,8 +11,6 @@
       private: no
 
   tasks:
-    - ansible.builtin.set_fact:
-        ansible_password: '{{ new_ssh_password }}'
 
     - name: "Check if host is reachable"
       ansible.builtin.wait_for:
@@ -36,6 +34,9 @@
           New password: '{{ new_ssh_password }}'
           Retype new password: '{{ new_ssh_password }}'
           "\\$": 'exit'
+
+    - ansible.builtin.set_fact:
+        ansible_password: '{{ new_ssh_password }}'
 
     - name: Push public key to remote host
       ansible.posix.authorized_key:
