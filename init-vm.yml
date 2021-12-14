@@ -1,0 +1,50 @@
+---
+- hosts: all
+  gather_facts: false
+  vars_prompt:
+
+    - name: ssh_user
+      prompt: Enter SSH user 
+      private: no
+
+    - name: new_ssh_password
+      prompt: Enter the new SSH password
+
+    - name: public_key_path
+      prompt: Enter the public key path
+      private: no
+
+  tasks:
+    - name: "Check if host is reachable"
+      ansible.builtin.wait_for:
+        timeout: 0
+      register: connect_rs
+      ignore_unreachable: yes
+
+    - name: "Display old password"
+      ansible.builtin.debug:
+        msg: 'Old password for {{ inventory_hostname }} is: "{{ old_password }}"'
+
+    - when: connect_rs is unreachable
+      name: "Change password on initial login"
+      delegate_to: localhost
+      ansible.builtin.expect:
+        command: ssh {{ ansible_ssh_common_args }} {{ ssh_user }}@{{ inventory_hostname }}
+        timeout: 20
+        responses:
+          Password: '{{ old_password }}'
+          Current password: '{{ old_password }}'
+          New password: '{{ new_ssh_password }}'
+          Retype new password: '{{ new_ssh_password }}'
+          "\\~\\]\\$": exit
+
+    - ansible.builtin.set_fact:
+        ansible_password: '{{ new_ssh_password }}'
+    
+    - name: Push public key to remote host
+      ansible.posix.authorized_key:
+        user: '{{ ssh_user }}'
+        state: present
+        key: "{{ lookup('file', public_key_path) }}"
+
+          
